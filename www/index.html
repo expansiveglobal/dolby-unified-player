@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-<title>Dolby Unified Player</title>
+<title>XPND™ by EXPANSIVE™</title>
 <style>
 :root{
   --bg:#0a0a0f;--panel:#12121a;--card:#1a1a26;--border:#2a2a3e;
@@ -15,10 +15,15 @@
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;}
 #app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;}
 #topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border);}
-#topbar .logo{font-size:15px;font-weight:700;letter-spacing:1px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-#topbar .tagline{font-size:10px;color:var(--sub);}
+#topbar .logo{font-size:16px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#topbar .tagline{font-size:9px;color:var(--sub);letter-spacing:1px;}
 #topbar-right{display:flex;align-items:center;gap:6px;}
-#sr-badge{font-size:10px;background:#ffd70020;color:var(--gold);border-radius:4px;padding:2px 6px;border:1px solid #ffd70040;cursor:pointer;user-select:none;}
+#sr-toggle-wrap{display:flex;align-items:center;gap:6px;}
+#sr-toggle-wrap span{font-size:10px;color:var(--sub);}
+#sr-switch{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+.sr-sw-btn{padding:4px 9px;font-size:10px;cursor:pointer;background:var(--panel);color:var(--sub);border:none;transition:.2s;font-weight:700;}
+.sr-sw-btn.active{background:var(--accent);color:#fff;}
+#sr-badge{font-size:10px;background:#ffd70020;color:var(--gold);border-radius:4px;padding:2px 6px;border:1px solid #ffd70040;}
 #tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;}
 #tabs::-webkit-scrollbar{display:none;}
 .tab{flex-shrink:0;padding:9px 10px;text-align:center;font-size:11px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;transition:.2s;}
@@ -27,19 +32,19 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .tab-content{display:none;flex-direction:column;gap:10px;}
 .tab-content.active{display:flex;}
 
-/* MODALS */
-.modal{position:fixed;inset:0;background:#000000aa;z-index:100;display:none;align-items:center;justify-content:center;}
-.modal.open{display:flex;}
-.modal-box{background:var(--card);border-radius:14px;padding:20px;width:300px;border:1px solid var(--border);}
-.modal-box h3{font-size:15px;margin-bottom:14px;text-align:center;}
-.modal-close{width:100%;background:var(--border);border:none;color:var(--text);border-radius:8px;padding:10px;cursor:pointer;margin-top:4px;font-size:13px;}
+/* SR SWITCHING TOAST */
+#sr-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;border-radius:20px;padding:8px 18px;font-size:12px;font-weight:700;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;}
+#sr-toast.show{opacity:1;}
 
-/* SR MODAL */
-.sr-option{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.2s;}
-.sr-option.active{border-color:var(--accent);background:#0066ff15;}
-.sr-option-label{font-weight:700;font-size:14px;}
-.sr-option-sub{font-size:11px;color:var(--sub);}
-.sr-option-check{color:var(--accent2);font-size:18px;}
+/* PERMISSION MODAL */
+.modal{position:fixed;inset:0;background:#000000cc;z-index:100;display:none;align-items:center;justify-content:center;}
+.modal.open{display:flex;}
+.modal-box{background:var(--card);border-radius:14px;padding:22px;width:300px;border:1px solid var(--border);}
+.modal-box h3{font-size:15px;margin-bottom:10px;text-align:center;}
+.modal-box p{font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:14px;text-align:center;}
+.modal-btn{width:100%;border:none;border-radius:8px;padding:12px;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px;}
+.modal-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+.modal-btn.secondary{background:var(--border);color:var(--text);}
 
 /* PLAYER */
 #track-art{width:100%;aspect-ratio:1;background:var(--card);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:60px;position:relative;overflow:hidden;}
@@ -81,7 +86,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s;}
 .toggle.on::after{left:20px;}
 .slider-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
-.slider-label{font-size:11px;color:var(--sub);width:52px;flex-shrink:0;}
+.slider-label{font-size:11px;color:var(--sub);width:60px;flex-shrink:0;}
 .slider-val{font-size:11px;color:var(--accent2);width:28px;text-align:right;flex-shrink:0;}
 input[type=range].tool-slider{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border);}
 input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent2);cursor:pointer;}
@@ -138,7 +143,6 @@ input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;widt
 .lib-track-name{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
 .lib-track-play{background:none;border:none;color:var(--sub);font-size:14px;cursor:pointer;padding:0 4px;flex-shrink:0;}
 .lib-track.playing .lib-track-play{color:var(--accent2);}
-#device-scan-info{background:#0066ff10;border:1px solid #0066ff30;border-radius:8px;padding:10px;font-size:11px;color:#88aaff;line-height:1.6;}
 
 /* EXPORT */
 .export-info{background:var(--card);border-radius:10px;padding:14px;border:1px solid var(--border);}
@@ -156,11 +160,17 @@ input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;widt
 <div id="app">
   <div id="topbar">
     <div>
-      <div class="logo">DOLBY UNIFIED</div>
-      <div class="tagline">Professional Audio Player</div>
+      <div class="logo">XPND™</div>
+      <div class="tagline">BY EXPANSIVE™</div>
     </div>
     <div id="topbar-right">
-      <div id="sr-badge">384kHz / 32-bit</div>
+      <div id="sr-toggle-wrap">
+        <div id="sr-switch">
+          <button class="sr-sw-btn active" data-sr="384000">384k</button>
+          <button class="sr-sw-btn" data-sr="192000">192k</button>
+        </div>
+      </div>
+      <div id="sr-badge">384kHz</div>
     </div>
   </div>
   <div id="tabs">
@@ -248,12 +258,8 @@ input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;widt
 
     <!-- ATMOS -->
     <div id="atmos-panel" class="tab-content">
-      <!-- Stereo Emulation / Real Distribution switch -->
       <div id="spatial-mode-row">
-        <div id="spatial-mode-label">
-          Spatial Output Mode
-          <span id="spatial-mode-desc">HRTF binaural fold-down to stereo</span>
-        </div>
+        <div id="spatial-mode-label">Spatial Output Mode<span id="spatial-mode-desc">HRTF binaural fold-down to stereo</span></div>
         <div id="spatial-mode-switch">
           <button class="spatial-sw-btn active" data-sm="emulation">Emulation</button>
           <button class="spatial-sw-btn" data-sm="real">Real 9.2.4</button>
@@ -289,9 +295,6 @@ input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;widt
     <div id="library-panel" class="tab-content">
       <input type="text" id="search-bar" placeholder="🔍 Search tracks, folders..."/>
       <div id="lib-stats">No tracks loaded</div>
-      <div id="device-scan-info">
-        📱 <strong>Scan Device:</strong> Tap "Scan Device Audio" to browse all audio files on your device. On Android this requires storage permission. Files appear grouped by folder exactly as stored on your device.
-      </div>
       <div class="lib-action-row">
         <button class="lib-action-btn" id="scan-device-btn">📱 Scan Device Audio</button>
         <button class="lib-action-btn" id="folder-btn">📁 Browse Folder</button>
@@ -313,7 +316,7 @@ input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;widt
         <div class="export-row"><span>Bit Depth</span><span class="export-val">32-bit Float</span></div>
         <div class="export-row"><span>Sample Rate</span><span class="export-val" id="export-sr-display">384,000 Hz</span></div>
         <div class="export-row"><span>Channels</span><span class="export-val">2 (Stereo Mixdown)</span></div>
-        <div class="export-row"><span>DSP Chain</span><span class="export-val">Full (NR+Style+Tone+PEQ+Boost)</span></div>
+        <div class="export-row"><span>DSP Chain</span><span class="export-val">Full (NR+Style+Tone+PEQ+Boost+Brightness)</span></div>
         <div class="export-row"><span>Track</span><span class="export-val" id="export-track-name">No Track</span></div>
       </div>
       <button id="export-btn" disabled>⬇ Export 32-bit WAV</button>
@@ -322,25 +325,21 @@ input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;widt
         <div id="export-progress-bar-wrap"><div id="export-progress-bar"></div></div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- SR MODAL -->
-<div id="sr-modal" class="modal">
+<!-- PERMISSION MODAL -->
+<div id="perm-modal" class="modal open">
   <div class="modal-box">
-    <h3>Sample Rate</h3>
-    <div class="sr-option active" data-sr="384000">
-      <div><div class="sr-option-label">384 kHz</div><div class="sr-option-sub">Gold standard — full resolution</div></div>
-      <span class="sr-option-check">✓</span>
-    </div>
-    <div class="sr-option" data-sr="192000">
-      <div><div class="sr-option-label">192 kHz</div><div class="sr-option-sub">Fallback — high resolution</div></div>
-      <span class="sr-option-check" style="opacity:0">✓</span>
-    </div>
-    <button class="modal-close" id="sr-modal-close">Close</button>
+    <h3>📱 XPND™ needs access</h3>
+    <p>To display your full audio library, XPND™ needs permission to read audio files and storage on your device.</p>
+    <button class="modal-btn primary" id="perm-grant-btn">Grant Access</button>
+    <button class="modal-btn secondary" id="perm-skip-btn">Skip for now</button>
   </div>
 </div>
+
+<!-- SR TOAST -->
+<div id="sr-toast"></div>
 
 <audio id="audio-el" crossorigin="anonymous"></audio>
 
@@ -348,62 +347,99 @@ input[type=range].tool-slider::-webkit-slider-thumb{-webkit-appearance:none;widt
 'use strict';
 
 const S={
-  ctx:null, src:null, nrNode:null, styleNodes:[], toneNodes:{}, compNode:null, brightnessNode:null, masterGain:null,
-  analyser:null, convolver:null, dryGain:null, wetGain:null, panners:[], mergerNode:null, peqNodes:[],
-  srTarget:384000, srActual:384000,
+  ctx:null, src:null, nrNode:null, styleNodes:[], toneNodes:{}, compNode:null,
+  brightnessNode:null, masterGain:null,
+  analyser:null, convolver:null, dryGain:null, wetGain:null, panners:[], mergerNode:null,
+  peqNodes:[],
+  srTarget:384000, srActual:384000, srSwitching:false,
   playing:false, repeat:false, shuffle:false,
   currentStyle:'Standard', styleIntensity:10,
   nrEnabled:true, nrAmount:5,
-  toneVals:{bass:0,mids:0,treble:0}, boost:0, atmosMode:'Off',
-  spatialMode:'emulation', // 'emulation' = HRTF fold-down to stereo | 'real' = full 9.2.4
+  toneVals:{bass:0,mids:0,treble:0}, boost:0, brightness:10, atmosMode:'Off',
+  spatialMode:'emulation',
   peqBands:[{id:0,type:'peaking',freq:1000,gain:0,q:1}], peqIdCtr:1,
   library:{}, queue:[], queueIdx:-1, streamConnected:{},
+  permissionGranted:false,
 };
 
 const AUDIO=document.getElementById('audio-el');
 
-// ── SAMPLE RATE SWITCHER ─────────────────────────────────────
-document.getElementById('sr-badge').onclick=()=>document.getElementById('sr-modal').classList.add('open');
-document.getElementById('sr-modal-close').onclick=()=>document.getElementById('sr-modal').classList.remove('open');
-document.querySelectorAll('.sr-option').forEach(opt=>{
-  opt.onclick=()=>{
-    const sr=parseInt(opt.dataset.sr);
-    S.srTarget=sr;
-    document.querySelectorAll('.sr-option').forEach(o=>{
-      o.classList.toggle('active',o.dataset.sr===String(sr));
-      o.querySelector('.sr-option-check').style.opacity=o.dataset.sr===String(sr)?'1':'0';
-    });
-    document.getElementById('sr-modal').classList.remove('open');
-    if(S.ctx){
-      const wasPlaying=S.playing, currentSrc=AUDIO.src, currentTime=AUDIO.currentTime;
-      AUDIO.pause(); S.playing=false;
-      S.ctx.close().then(()=>{
-        S.ctx=null; S.src=null;
-        initCtx();
-        if(currentSrc){
-          AUDIO.src=currentSrc; AUDIO.currentTime=currentTime;
-          if(wasPlaying)AUDIO.play().then(()=>{S.playing=true;document.getElementById('play-btn').textContent='⏸';});
-        }
-      });
+// ── PERMISSIONS ──────────────────────────────────────────────
+function requestStoragePermission(){
+  // Capacitor Filesystem / Android permission request
+  if(typeof window.Capacitor!=='undefined'){
+    const {Permissions}=window.Capacitor.Plugins;
+    if(Permissions){
+      Permissions.requestPermissions({permissions:['storage','photos','media']})
+        .then(()=>{S.permissionGranted=true;})
+        .catch(()=>{});
     }
-  };
-});
+  }
+  // Web fallback — permissions are granted implicitly by file picker interaction
+  S.permissionGranted=true;
+}
 
-// ── SPATIAL MODE SWITCH ──────────────────────────────────────
-document.querySelectorAll('.spatial-sw-btn').forEach(btn=>{
-  btn.onclick=()=>{
-    S.spatialMode=btn.dataset.sm;
-    document.querySelectorAll('.spatial-sw-btn').forEach(b=>b.classList.toggle('active',b.dataset.sm===S.spatialMode));
-    const info=document.getElementById('spatial-info');
-    if(S.spatialMode==='emulation'){
-      info.textContent='Stereo Emulation: all 15 channels processed through HRTF and folded down to 2-channel stereo — works on any headphones or speakers.';
-      document.getElementById('spatial-mode-desc').textContent='HRTF binaural fold-down to stereo';
-    }else{
-      info.textContent='Real 9.2.4: full 15-channel distribution — requires a physical 9.2.4 surround sound system connected to your device.';
-      document.getElementById('spatial-mode-desc').textContent='Full 15-channel hardware distribution';
+document.getElementById('perm-grant-btn').onclick=()=>{
+  document.getElementById('perm-modal').classList.remove('open');
+  requestStoragePermission();
+  // Immediately trigger device scan after granting
+  setTimeout(()=>document.getElementById('file-input').click(), 300);
+};
+document.getElementById('perm-skip-btn').onclick=()=>{
+  document.getElementById('perm-modal').classList.remove('open');
+};
+
+// ── REAL-TIME SAMPLE RATE SWITCH ─────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('sr-toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+async function switchSampleRate(newSr){
+  if(S.srSwitching||newSr===S.srTarget)return;
+  S.srSwitching=true;
+  S.srTarget=newSr;
+
+  // Update switch UI immediately
+  document.querySelectorAll('.sr-sw-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.sr)===newSr));
+  showToast(`Switching to ${newSr/1000}kHz...`);
+
+  const wasPlaying=S.playing;
+  const currentSrc=AUDIO.src;
+  const currentTime=AUDIO.currentTime;
+
+  // Pause gracefully
+  if(wasPlaying){AUDIO.pause();S.playing=false;document.getElementById('play-btn').textContent='▶';}
+
+  // Close old context
+  if(S.ctx){
+    try{await S.ctx.close();}catch(e){}
+    S.ctx=null;S.src=null;
+  }
+
+  // Init new context at requested rate
+  initCtx();
+
+  // Resume playback from same position
+  if(currentSrc){
+    AUDIO.src=currentSrc;
+    AUDIO.currentTime=currentTime;
+    if(wasPlaying){
+      try{
+        await AUDIO.play();
+        S.playing=true;
+        document.getElementById('play-btn').textContent='⏸';
+      }catch(e){}
     }
-    if(S.ctx&&S.atmosMode!=='Off')rewire();
-  };
+  }
+
+  showToast(`Now running at ${S.srActual/1000}kHz`);
+  S.srSwitching=false;
+}
+
+document.querySelectorAll('.sr-sw-btn').forEach(btn=>{
+  btn.onclick=()=>switchSampleRate(parseInt(btn.dataset.sr));
 });
 
 // ── AUDIO CONTEXT ────────────────────────────────────────────
@@ -418,9 +454,12 @@ function initCtx(){
     }catch(e){S.ctx=null;}
   }
   if(!S.ctx){S.ctx=new(window.AudioContext||window.webkitAudioContext)();S.srActual=S.ctx.sampleRate;}
-  document.getElementById('sr-badge').textContent=`${(S.srActual/1000).toFixed(0)}kHz / 32-bit`;
+  const label=`${(S.srActual/1000).toFixed(0)}kHz`;
+  document.getElementById('sr-badge').textContent=label;
   document.getElementById('export-sr-display').textContent=`${S.srActual.toLocaleString()} Hz`;
-  buildChain(); startViz(); startMeters();
+  // Sync switch buttons to actual achieved rate
+  document.querySelectorAll('.sr-sw-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.sr)===S.srActual));
+  buildChain();startViz();startMeters();
 }
 
 // ── DSP ──────────────────────────────────────────────────────
@@ -438,27 +477,23 @@ const ATMOS_IR={
   Game:{dur:0.5,decay:4.0,wet:0.12},Voice:{dur:0.25,decay:5.0,wet:0.04},
   FullSpatial:{dur:3.5,decay:1.8,wet:0.45},ConcertHall:{dur:4.0,decay:1.5,wet:0.50},
 };
-
-// 9.2.4 channel layout with fold-down gain weights for stereo emulation
-// foldL/foldR = how much each channel contributes to L/R in stereo emulation
 const CH_LAYOUT=[
-  {lbl:'L',  az:-30,  el:0,  foldL:1.00, foldR:0.00},
-  {lbl:'C',  az:0,    el:0,  foldL:0.50, foldR:0.50},
-  {lbl:'R',  az:30,   el:0,  foldL:0.00, foldR:1.00},
-  {lbl:'Ls', az:-110, el:0,  foldL:0.70, foldR:0.00},
-  {lbl:'Rs', az:110,  el:0,  foldL:0.00, foldR:0.70},
-  {lbl:'Lrs',az:-145, el:0,  foldL:0.50, foldR:0.00},
-  {lbl:'Rrs',az:145,  el:0,  foldL:0.00, foldR:0.50},
-  {lbl:'Lw', az:-60,  el:0,  foldL:0.80, foldR:0.10},
-  {lbl:'Rw', az:60,   el:0,  foldL:0.10, foldR:0.80},
-  {lbl:'LFE1',az:0,   el:-30,foldL:0.50, foldR:0.50},
-  {lbl:'LFE2',az:0,   el:-30,foldL:0.50, foldR:0.50},
-  {lbl:'LTF',az:-45,  el:45, foldL:0.70, foldR:0.10},
-  {lbl:'RTF',az:45,   el:45, foldL:0.10, foldR:0.70},
-  {lbl:'LTR',az:-135, el:45, foldL:0.55, foldR:0.05},
-  {lbl:'RTR',az:135,  el:45, foldL:0.05, foldR:0.55},
+  {lbl:'L',  az:-30,  el:0,  foldL:1.00,foldR:0.00},
+  {lbl:'C',  az:0,    el:0,  foldL:0.50,foldR:0.50},
+  {lbl:'R',  az:30,   el:0,  foldL:0.00,foldR:1.00},
+  {lbl:'Ls', az:-110, el:0,  foldL:0.70,foldR:0.00},
+  {lbl:'Rs', az:110,  el:0,  foldL:0.00,foldR:0.70},
+  {lbl:'Lrs',az:-145, el:0,  foldL:0.50,foldR:0.00},
+  {lbl:'Rrs',az:145,  el:0,  foldL:0.00,foldR:0.50},
+  {lbl:'Lw', az:-60,  el:0,  foldL:0.80,foldR:0.10},
+  {lbl:'Rw', az:60,   el:0,  foldL:0.10,foldR:0.80},
+  {lbl:'LFE1',az:0,   el:-30,foldL:0.50,foldR:0.50},
+  {lbl:'LFE2',az:0,   el:-30,foldL:0.50,foldR:0.50},
+  {lbl:'LTF',az:-45,  el:45, foldL:0.70,foldR:0.10},
+  {lbl:'RTF',az:45,   el:45, foldL:0.10,foldR:0.70},
+  {lbl:'LTR',az:-135, el:45, foldL:0.55,foldR:0.05},
+  {lbl:'RTR',az:135,  el:45, foldL:0.05,foldR:0.55},
 ];
-
 function deg(d){return d*Math.PI/180;}
 function buildImpulse(mode){
   const cfg=ATMOS_IR[mode];if(!cfg)return null;
@@ -466,7 +501,6 @@ function buildImpulse(mode){
   for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,cfg.decay);}
   return buf;
 }
-
 function buildChain(){
   const c=S.ctx;
   try{S.src=c.createMediaElementSource(AUDIO);}catch(e){}
@@ -478,16 +512,12 @@ function buildChain(){
   applyTone();
   S.peqNodes=buildPeqNodes();
   S.compNode=c.createDynamicsCompressor();applyBoost();
-  S.brightnessNode=c.createBiquadFilter();
-  S.brightnessNode.type='highshelf';
-  S.brightnessNode.frequency.value=8000;
-  applyBrightness();
+  S.brightnessNode=c.createBiquadFilter();S.brightnessNode.type='highshelf';S.brightnessNode.frequency.value=8000;applyBrightness();
   S.dryGain=c.createGain();S.wetGain=c.createGain();S.convolver=c.createConvolver();
   S.analyser=c.createAnalyser();S.analyser.fftSize=2048;S.analyser.smoothingTimeConstant=0.8;
   S.masterGain=c.createGain();S.masterGain.gain.value=parseFloat(document.getElementById('vol').value);
   wireChain();
 }
-
 function buildStyleNodes(){
   const c=S.ctx,preset=STYLE_PRESETS[S.currentStyle]||[],mult=S.styleIntensity/10;
   return preset.map(f=>{const n=c.createBiquadFilter();n.type=f.type;n.frequency.value=f.freq;n.gain.value=f.gain*mult;n.Q.value=f.q;return n;});
@@ -495,7 +525,6 @@ function buildStyleNodes(){
 function buildPeqNodes(){
   return S.peqBands.map(b=>{const n=S.ctx.createBiquadFilter();n.type=b.type;n.frequency.value=Math.max(3,Math.min(b.freq,45000));n.gain.value=b.gain;n.Q.value=b.q;return n;});
 }
-
 function wireChain(){
   const c=S.ctx,cn=(a,b)=>{try{a.connect(b);}catch(e){}};
   let node=S.src;
@@ -505,55 +534,38 @@ function wireChain(){
   for(const p of S.peqNodes){cn(node,p);node=p;}
   cn(node,S.compNode);node=S.compNode;
   cn(node,S.brightnessNode);node=S.brightnessNode;
-
   if(S.atmosMode!=='Off'){
     const cfg=ATMOS_IR[S.atmosMode];
     S.dryGain.gain.value=1-cfg.wet;S.wetGain.gain.value=cfg.wet;
     const ir=buildImpulse(S.atmosMode);if(ir)S.convolver.buffer=ir;
     cn(node,S.dryGain);cn(node,S.convolver);cn(S.convolver,S.wetGain);
     const mix=c.createGain();cn(S.dryGain,mix);cn(S.wetGain,mix);
-
     if(S.spatialMode==='emulation'){
-      // ── STEREO EMULATION: HRTF panners + fold-down merger ──
-      // Each channel gets a HRTF panner for spatial coloring,
-      // then is weighted and merged into a stereo pair via ChannelMergerNode
-      const merger=c.createChannelMerger(2);
-      S.mergerNode=merger;
+      const merger=c.createChannelMerger(2);S.mergerNode=merger;
       S.panners=CH_LAYOUT.map(ch=>{
-        const p=c.createPanner();
-        p.panningModel='HRTF';p.distanceModel='inverse';p.rolloffFactor=1;
+        const p=c.createPanner();p.panningModel='HRTF';p.distanceModel='inverse';p.rolloffFactor=1;
         p.coneInnerAngle=360;p.coneOuterAngle=360;p.coneOuterGain=0;
         const az=deg(ch.az),el=deg(ch.el);
         p.setPosition(Math.cos(el)*Math.sin(az),Math.sin(el),-Math.cos(el)*Math.cos(az));
-        // Left channel contribution
         const gL=c.createGain();gL.gain.value=ch.foldL;
-        // Right channel contribution
         const gR=c.createGain();gR.gain.value=ch.foldR;
-        cn(mix,p);cn(p,gL);cn(p,gR);
-        cn(gL,merger,0,0); // into merger left
-        cn(gR,merger,0,1); // into merger right
+        cn(mix,p);cn(p,gL);cn(p,gR);cn(gL,merger,0,0);cn(gR,merger,0,1);
         return p;
       });
       cn(merger,S.analyser);
     }else{
-      // ── REAL 9.2.4: full HRTF panner array, no fold-down ──
       S.mergerNode=null;
       S.panners=CH_LAYOUT.map(ch=>{
-        const p=c.createPanner();
-        p.panningModel='HRTF';p.distanceModel='inverse';p.rolloffFactor=1;
+        const p=c.createPanner();p.panningModel='HRTF';p.distanceModel='inverse';p.rolloffFactor=1;
         p.coneInnerAngle=360;p.coneOuterAngle=360;p.coneOuterGain=0;
         const az=deg(ch.az),el=deg(ch.el);
         p.setPosition(Math.cos(el)*Math.sin(az),Math.sin(el),-Math.cos(el)*Math.cos(az));
-        cn(mix,p);cn(p,S.analyser);
-        return p;
+        cn(mix,p);cn(p,S.analyser);return p;
       });
     }
-  }else{
-    cn(node,S.analyser);
-  }
+  }else{cn(node,S.analyser);}
   cn(S.analyser,S.masterGain);cn(S.masterGain,c.destination);
 }
-
 function rewire(){
   [S.src,S.nrNode,...S.styleNodes,...Object.values(S.toneNodes),...S.peqNodes,
    S.compNode,S.brightnessNode,S.dryGain,S.wetGain,S.convolver,S.mergerNode,...S.panners,S.analyser,S.masterGain]
@@ -564,12 +576,7 @@ function rebuildStyleNodes(){S.styleNodes=buildStyleNodes();rewire();}
 function rebuildPeqNodes(){S.peqNodes=buildPeqNodes();rewire();}
 function applyNR(){if(!S.nrNode)return;S.nrNode.frequency.value=S.nrEnabled?(20+180*S.nrAmount/20):3;S.nrNode.Q.value=S.nrEnabled?(0.6+1.8*S.nrAmount/20):0.6;}
 function applyTone(){if(!S.toneNodes.bass)return;S.toneNodes.bass.gain.value=S.toneVals.bass*0.75;S.toneNodes.mids.gain.value=S.toneVals.mids*0.75;S.toneNodes.treble.gain.value=S.toneVals.treble*0.75;}
-function applyBrightness(){
-  if(!S.brightnessNode)return;
-  // 0 = -9dB (dark/warm), 10 = 0dB (neutral), 20 = +9dB (bright/airy)
-  const val=parseFloat(document.getElementById('brightness-val')?.value??10);
-  S.brightnessNode.gain.value=(val-10)*0.9;
-}
+function applyBrightness(){if(!S.brightnessNode)return;S.brightnessNode.gain.value=(S.brightness-10)*0.9;}
 function applyBoost(){
   if(!S.compNode)return;
   const b=S.boost;
@@ -577,6 +584,23 @@ function applyBoost(){
   S.compNode.knee.value=30-(22*b/20);S.compNode.release.value=(300-180*b/20)/1000;
   if(S.masterGain)S.masterGain.gain.value=(0.55+0.85*b/20)*parseFloat(document.getElementById('vol').value);
 }
+
+// ── SPATIAL MODE ─────────────────────────────────────────────
+document.querySelectorAll('.spatial-sw-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    S.spatialMode=btn.dataset.sm;
+    document.querySelectorAll('.spatial-sw-btn').forEach(b=>b.classList.toggle('active',b.dataset.sm===S.spatialMode));
+    const info=document.getElementById('spatial-info');
+    if(S.spatialMode==='emulation'){
+      info.textContent='Stereo Emulation: all 15 channels processed through HRTF and folded down to 2-channel stereo — works on any headphones or speakers.';
+      document.getElementById('spatial-mode-desc').textContent='HRTF binaural fold-down to stereo';
+    }else{
+      info.textContent='Real 9.2.4: full 15-channel distribution — requires a physical 9.2.4 surround sound system connected to your device.';
+      document.getElementById('spatial-mode-desc').textContent='Full 15-channel hardware distribution';
+    }
+    if(S.ctx&&S.atmosMode!=='Off')rewire();
+  };
+});
 
 // ── VISUALIZER ───────────────────────────────────────────────
 const vizCanvas=document.getElementById('viz');
@@ -734,7 +758,7 @@ function nextTrack(){
 }
 function fmt(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec<10?'0':''}${sec}`;}
 
-// ── LIBRARY & DEVICE SCAN ────────────────────────────────────
+// ── LIBRARY ──────────────────────────────────────────────────
 function updateLibStats(){
   const total=S.queue.length,folders=Object.keys(S.library).length;
   document.getElementById('lib-stats').textContent=
@@ -747,7 +771,6 @@ function addFiles(files){
     const folder=parts.length>1?parts[0]:'Device Audio';
     const name=parts[parts.length-1];
     if(!S.library[folder])S.library[folder]=[];
-    // Avoid duplicates
     if(!S.library[folder].find(t=>t.name===name)){
       S.library[folder].push({name,url:URL.createObjectURL(f),folder,source:'Local File'});
     }
@@ -755,22 +778,10 @@ function addFiles(files){
   flattenQueue();renderLibrary();updateLibStats();
 }
 function flattenQueue(){S.queue=[];Object.values(S.library).forEach(t=>S.queue.push(...t));}
-
-// Device scan — uses file input with no directory restriction to pick all audio
-function scanDeviceAudio(){
-  // On Android via Capacitor, trigger the file picker for all audio files
-  // webkitdirectory is omitted so the user can pick from any location on the device
-  const inp=document.getElementById('file-input');
-  inp.click();
-}
-
 function renderLibrary(filter=''){
   const cont=document.getElementById('lib-list');cont.innerHTML='';
-  const q=filter.toLowerCase();
-  let totalShown=0;
-  // Sort folders alphabetically
-  const sortedFolders=Object.entries(S.library).sort((a,b)=>a[0].localeCompare(b[0]));
-  sortedFolders.forEach(([folder,tracks])=>{
+  const q=filter.toLowerCase();let totalShown=0;
+  Object.entries(S.library).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([folder,tracks])=>{
     const filtered=q?tracks.filter(t=>t.name.toLowerCase().includes(q)||folder.toLowerCase().includes(q)):tracks;
     if(!filtered.length)return;
     totalShown+=filtered.length;
@@ -786,27 +797,21 @@ function renderLibrary(filter=''){
       row.innerHTML=`<span class="lib-track-num">${i+1}</span>
         <span class="lib-track-name">${t.name}</span>
         <button class="lib-track-play">${qIdx===S.queueIdx&&S.playing?'⏸':'▶'}</button>`;
-      const playFn=e=>{
-        if(e)e.stopPropagation();
-        S.queueIdx=S.queue.indexOf(t);
-        loadTrack(t);
-        switchTab('player');
-      };
+      const playFn=e=>{if(e)e.stopPropagation();S.queueIdx=S.queue.indexOf(t);loadTrack(t);switchTab('player');};
       row.querySelector('.lib-track-play').onclick=playFn;
       row.onclick=playFn;
       list.appendChild(row);
     });
-    let open=true;
-    hdr.onclick=()=>{open=!open;list.style.display=open?'':'none';};
+    let open=true;hdr.onclick=()=>{open=!open;list.style.display=open?'':'none';};
     div.appendChild(list);cont.appendChild(div);
   });
-  if(q&&totalShown===0){
-    cont.innerHTML=`<div style="text-align:center;color:var(--sub);padding:20px;">No results for "${filter}"</div>`;
-  }
+  if(q&&totalShown===0)cont.innerHTML=`<div style="text-align:center;color:var(--sub);padding:20px;">No results for "${filter}"</div>`;
 }
-
 document.getElementById('search-bar').addEventListener('input',function(){renderLibrary(this.value);});
-document.getElementById('scan-device-btn').onclick=()=>scanDeviceAudio();
+document.getElementById('scan-device-btn').onclick=()=>{
+  if(!S.permissionGranted){document.getElementById('perm-modal').classList.add('open');return;}
+  document.getElementById('file-input').click();
+};
 document.getElementById('folder-btn').onclick=()=>document.getElementById('folder-input').click();
 document.getElementById('folder-input').addEventListener('change',e=>addFiles(e.target.files));
 document.getElementById('file-input').addEventListener('change',e=>addFiles(e.target.files));
@@ -827,7 +832,7 @@ document.getElementById('nr-amount').addEventListener('input',function(){documen
   document.getElementById(`tone-${k}`).addEventListener('input',function(){document.getElementById(`tone-${k}-val`).textContent=this.value;S.toneVals[k]=+this.value;applyTone();});
 });
 document.getElementById('boost-val').addEventListener('input',function(){document.getElementById('boost-display').textContent=this.value;S.boost=+this.value;applyBoost();});
-document.getElementById('brightness-val').addEventListener('input',function(){document.getElementById('brightness-display').textContent=this.value;applyBrightness();});
+document.getElementById('brightness-val').addEventListener('input',function(){document.getElementById('brightness-display').textContent=this.value;S.brightness=+this.value;applyBrightness();});
 document.querySelectorAll('.atmos-btn').forEach(btn=>{
   btn.onclick=()=>{document.querySelectorAll('.atmos-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');S.atmosMode=btn.dataset.mode;rewire();};
 });
@@ -850,10 +855,7 @@ document.querySelectorAll('.stream-service').forEach(svc=>{
       if(typeof window.Capacitor!=='undefined'&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Browser){
         window.Capacitor.Plugins.Browser.open({url:STREAM_OAUTH[id]});
       }else{window.open(STREAM_OAUTH[id],`${id}_auth`,'width=400,height=600');}
-      setTimeout(()=>{
-        S.streamConnected[id]=true;
-        const st=document.getElementById(`status-${id}`);st.textContent='✓ Connected';st.className='stream-status connected';
-      },2000);
+      setTimeout(()=>{S.streamConnected[id]=true;const st=document.getElementById(`status-${id}`);st.textContent='✓ Connected';st.className='stream-status connected';},2000);
     }
   };
 });
@@ -880,7 +882,7 @@ document.getElementById('export-btn').addEventListener('click',async()=>{
     const tmpCtx=new(window.AudioContext||window.webkitAudioContext)();
     const decoded=await tmpCtx.decodeAudioData(ab);tmpCtx.close();
     const sr=S.srActual;
-    progTxt.textContent=`Rendering @ ${(sr/1000).toFixed(0)}kHz...`;progBar.style.width='30%';
+    progTxt.textContent=`Rendering @ ${sr/1000}kHz...`;progBar.style.width='30%';
     const offCtx=new OfflineAudioContext(2,Math.ceil(sr*decoded.duration),sr);
     const offSrc=offCtx.createBufferSource();offSrc.buffer=decoded;
     const mkF=(type,freq,gain,q)=>{const f=offCtx.createBiquadFilter();f.type=type;f.frequency.value=freq;f.gain.value=gain;f.Q.value=q;return f;};
@@ -894,14 +896,14 @@ document.getElementById('export-btn').addEventListener('click',async()=>{
     const bv=S.boost;
     offComp.threshold.value=-44+(24*bv/20);offComp.ratio.value=3+(17*bv/20);
     offComp.knee.value=30-(22*bv/20);offComp.release.value=(300-180*bv/20)/1000;
+    const offBrightness=mkF('highshelf',8000,(S.brightness-10)*0.9,1);
     const offMaster=offCtx.createGain();offMaster.gain.value=0.55+0.85*bv/20;
-    let node=offSrc;
-    const c=(a,b2)=>a.connect(b2);
+    let node=offSrc;const c=(a,b2)=>a.connect(b2);
     c(node,offNR);node=offNR;
     offStyle.forEach(s=>{c(node,s);node=s;});
     c(node,offBass);c(offBass,offMids);c(offMids,offTreble);node=offTreble;
     offPeq.forEach(p=>{c(node,p);node=p;});
-    c(node,offComp);c(offComp,offMaster);c(offMaster,offCtx.destination);
+    c(node,offComp);c(offComp,offBrightness);c(offBrightness,offMaster);c(offMaster,offCtx.destination);
     offSrc.start();
     progBar.style.width='60%';
     const rendered=await offCtx.startRendering();
@@ -911,7 +913,7 @@ document.getElementById('export-btn').addEventListener('click',async()=>{
     const blob=new Blob([wavBuf],{type:'audio/wav'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     const name=(document.getElementById('track-title').textContent||'export').replace(/\.[^.]+$/,'');
-    a.download=`${name}_32bit_${(sr/1000).toFixed(0)}kHz.wav`;a.click();URL.revokeObjectURL(a.href);
+    a.download=`${name}_32bit_${sr/1000}kHz.wav`;a.click();URL.revokeObjectURL(a.href);
     progBar.style.width='100%';progTxt.textContent='✓ Export complete!';
     setTimeout(()=>{progDiv.style.display='none';expBtn.disabled=false;},2500);
   }catch(err){
@@ -932,9 +934,7 @@ function switchTab(id){
 document.querySelectorAll('.tab').forEach(t=>{t.onclick=()=>switchTab(t.dataset.tab);});
 
 // ── INIT ─────────────────────────────────────────────────────
-buildMeterUI();
-renderPeqBands();
-updateLibStats();
+buildMeterUI();renderPeqBands();updateLibStats();
 document.addEventListener('touchstart',()=>initCtx(),{once:true});
 document.addEventListener('click',()=>initCtx(),{once:true});
 </script>
