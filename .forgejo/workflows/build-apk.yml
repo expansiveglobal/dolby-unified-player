@@ -1,0 +1,82 @@
+name: Build & Release Dolby Unified Player APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Signed Release APK
+    runs-on: codeberg-tiny
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/dolby-release.jks
+
+      - name: Build signed release APK
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS:         ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/app/dolby-release.jks \
+            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
+      - name: Rename APK
+        run: |
+          mv android/app/build/outputs/apk/release/app-release.apk \
+             android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
+
+      - name: Upload APK als artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DolbyUnifiedPlayer-APK
+          path: android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
+          retention-days: 30
+
+      - name: Maak Codeberg Release aan
+        uses: https://codeberg.org/actions/forgejo-release@v2
+        with:
+          direction: upload
+          tag: v1.0.0-build${{ gitea.run_number }}
+          title: "Dolby Unified Player Build ${{ gitea.run_number }}"
+          release-notes: "Automatische release — APK bijgevoegd als download."
+          token: ${{ secrets.FORGEJO_TOKEN }}
+          files: android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
