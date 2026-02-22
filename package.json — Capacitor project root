@@ -1,0 +1,20 @@
+{
+  "name": "dolby-unified-player",
+  "version": "1.0.0",
+  "description": "Dolby Unified Player — Professional Audio APK",
+  "main": "index.js",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "build:debug": "cd android && ./gradlew assembleDebug",
+    "build:release": "cd android && ./gradlew assembleRelease",
+    "open:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/browser": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
