@@ -214,16 +214,7 @@ input[type=file]{display:none}
 <div class="topbar">
   <div class="logo">DOLBY UNIFIED PLAYER<sub>SURROUND 9.1.4 · 192kHz · 24-bit</sub></div>
   <div style="flex:1"></div>
-  <span style="font-size:9px;color:var(--sub);flex-shrink:0">☀</span>
-  <input type="range" id="brightSl" min="0" max="20" value="10" step="1"
-    style="width:72px;accent-color:var(--acc);cursor:pointer;flex-shrink:0"
-    oninput="onBrightness(this)" title="Brightness">
-  <span id="brightV" style="font-size:9px;color:var(--sub);min-width:16px;flex-shrink:0">10</span>
-  <span style="font-size:9px;color:var(--sub);flex-shrink:0;margin-left:4px">◈</span>
-  <input type="range" id="claritySl" min="0" max="20" value="10" step="1"
-    style="width:72px;accent-color:var(--acO);cursor:pointer;flex-shrink:0"
-    oninput="onClarity(this)" title="Clarity">
-  <span id="clarityV" style="font-size:9px;color:var(--sub);min-width:16px;flex-shrink:0">10</span>
+
   <span id="bNR" class="tbadge off">NR OFF</span>
   <span id="bSur" class="tbadge off">SURROUND OFF</span>
   <span id="bSrc" class="tbadge off">LOCAL</span>
@@ -369,9 +360,23 @@ input[type=file]{display:none}
     <div class="blv"><div class="blf" id="boostFill" style="width:50%"></div></div>
     <div style="font-size:9px;color:var(--sub);line-height:1.7">0 = full dynamics · 20 = max loudness.</div>
   </div>
+  <div class="tc">
+    <div class="tc-t tc-on">✨ Brightness</div>
+    <div class="lr"><span class="ll">Level</span>
+      <input type="range" class="sg" id="audioBrightSl" min="0" max="20" value="10" step="1" oninput="onAudioBrightness(this)">
+      <span class="vb" id="audioBrightV">10</span>
+    </div>
+    <div style="font-size:9px;color:var(--sub);line-height:1.7;margin-top:7px">High-shelf boost at 8kHz. 0 = −6dB · 10 = flat · 20 = +9dB. Adds air, shimmer, and sparkle.</div>
+  </div>
+  <div class="tc">
+    <div class="tc-t tc-on">🔍 Clarity</div>
+    <div class="lr"><span class="ll">Level</span>
+      <input type="range" class="sg" id="audioClaritySl" min="0" max="20" value="10" step="1" oninput="onAudioClarity(this)">
+      <span class="vb" id="audioClarityV">10</span>
+    </div>
+    <div style="font-size:9px;color:var(--sub);line-height:1.7;margin-top:7px">Presence peak at 3kHz + transient edge at 5kHz. 0 = recessed · 10 = flat · 20 = forward and defined.</div>
+  </div>
 </div>
-
-<!-- 9.1.4 SURROUND SOUND -->
 <div class="sh">🔊 9.1.4 Surround Sound → Binaural Stereo<span></span></div>
 <div class="sur-w">
   <div class="tc-t tc-sur">14-Channel HRTF Downmix · ITU-R BS.2051 Type H Layout · Real-time Binaural Render</div>
@@ -573,6 +578,7 @@ let compNode=null,analyserN=null,masterGain=null;
 let nrNode=null,toneN={},styleN=[],peqNodes=[];
 // 9.1.4 surround nodes
 let surPanners=[],surGains=[],surMixer=null,surConv=null,surDry=null,surWet=null;
+let brightNode=null, clarityNode=null, clarityNode2=null;
 let surMode='music',surRoom_=8,surWidth_=12;
 
 let tracks=[],folders=[],curIdx=-1,doRepeat=false,doShuffle=false;
@@ -671,6 +677,14 @@ function initAudio(){
   surDry=ACX.createGain();
   surWet=ACX.createGain();
   surConv=ACX.createConvolver();
+  // Audio Brightness — high shelf at 8kHz
+  brightNode=ACX.createBiquadFilter();
+  brightNode.type='highshelf'; brightNode.frequency.value=8000; brightNode.gain.value=0;
+  // Audio Clarity — presence peak at 3kHz (primary) + 5kHz (transient edge)
+  clarityNode=ACX.createBiquadFilter();
+  clarityNode.type='peaking'; clarityNode.frequency.value=3000; clarityNode.Q.value=0.9; clarityNode.gain.value=0;
+  clarityNode2=ACX.createBiquadFilter();
+  clarityNode2.type='peaking'; clarityNode2.frequency.value=5000; clarityNode2.Q.value=1.4; clarityNode2.gain.value=0;
   rebuildPeqN();
   build914Panners();
   buildSurImpulse(surMode);
@@ -753,13 +767,16 @@ function connectChain(){
              compNode,surDry,surWet,surConv,surMixer,...surPanners,...surGains,analyserN,masterGain];
   all.forEach(n=>{if(n)try{n.disconnect();}catch(e){}});
 
-  // Build pre-spatial chain: src → NR → style EQ → tone → PEQ → compressor
+  // Build pre-spatial chain: src → NR → style EQ → tone → brightness → clarity → PEQ → compressor
   let n=srcNode;
   n.connect(nrNode); n=nrNode;
   styleN.forEach(f=>{n.connect(f);n=f;});
   n.connect(toneN.bass); n=toneN.bass;
   n.connect(toneN.mids); n=toneN.mids;
   n.connect(toneN.treble); n=toneN.treble;
+  n.connect(brightNode); n=brightNode;
+  n.connect(clarityNode); n=clarityNode;
+  n.connect(clarityNode2); n=clarityNode2;
   peqNodes.forEach(f=>{n.connect(f);n=f;});
   n.connect(compNode); n=compNode;
 
@@ -1718,29 +1735,19 @@ function updateSrcBadge(txt){
   }catch(e){console.error('OAuth callback error:',e);}
 })();
 
-function onBrightness(el){
+function onAudioBrightness(el){
   const v=+el.value;
-  document.getElementById('brightV').textContent=v;
-  applyVisualFilters();
+  document.getElementById('audioBrightV').textContent=v;
+  // High shelf at 8kHz: 0→-6dB, 10→0dB, 20→+9dB
+  if(brightNode) brightNode.gain.setTargetAtTime((v-10)*0.75, ACX.currentTime, 0.02);
 }
-function onClarity(el){
+function onAudioClarity(el){
   const v=+el.value;
-  document.getElementById('clarityV').textContent=v;
-  applyVisualFilters();
-}
-function applyVisualFilters(){
-  const b=+document.getElementById('brightSl').value;
-  const c=+document.getElementById('claritySl').value;
-  // Brightness: 0→0.3, 10→1.0, 20→2.0
-  const brightness=(0.3+b/20*1.7).toFixed(3);
-  // Clarity = midtone contrast punch + saturation crispness + subtle sharpness via drop-shadow
-  // contrast: 0→0.85, 10→1.0, 20→1.35  |  saturate: 0→0.7, 10→1.0, 20→1.5
-  const contrast=(0.85+c/20*0.5).toFixed(3);
-  const saturate=(0.7+c/20*0.8).toFixed(3);
-  // drop-shadow with 0 offset = edge definition boost (perceived sharpness)
-  const blur=Math.max(0,(10-c)*0.04).toFixed(2); // slight deblur as clarity rises
-  document.body.style.filter=
-    `brightness(${brightness}) contrast(${contrast}) saturate(${saturate}) blur(${blur}px)`;
+  document.getElementById('audioClarityV').textContent=v;
+  // Presence peak at 3kHz: 0→-5dB, 10→0dB, 20→+8dB
+  if(clarityNode) clarityNode.gain.setTargetAtTime((v-10)*0.65, ACX.currentTime, 0.02);
+  // Transient sharpness via upper-mid peak at 5kHz, half the intensity
+  if(clarityNode2) clarityNode2.gain.setTargetAtTime((v-10)*0.3, ACX.currentTime, 0.02);
 }
 
 // Init UI
