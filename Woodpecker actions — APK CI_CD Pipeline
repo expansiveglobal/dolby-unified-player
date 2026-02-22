@@ -1,0 +1,51 @@
+when:
+  event: push
+  branch: main
+
+steps:
+  build-apk:
+    image: ghcr.io/cirruslabs/android-sdk:34
+    environment:
+      - KEYSTORE_BASE64
+      - KEYSTORE_PASSWORD
+      - KEY_ALIAS
+      - KEY_PASSWORD
+    commands:
+      # ── Node 20 ─────────────────────────────────────────────
+      - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      - apt-get install -y nodejs
+
+      # ── Install Capacitor dependencies ───────────────────────
+      - npm ci
+
+      # ── Sync web assets → Android project ───────────────────
+      - npx cap sync android
+
+      # ── Decode keystore ──────────────────────────────────────
+      - echo "$KEYSTORE_BASE64" | base64 -d > android/app/dolby-release.jks
+
+      # ── Build signed release APK ─────────────────────────────
+      - chmod +x android/gradlew
+      - cd android && ./gradlew assembleRelease
+          -Pandroid.injected.signing.store.file=$CI_WORKSPACE/android/app/dolby-release.jks
+          -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
+          -Pandroid.injected.signing.key.alias=$KEY_ALIAS
+          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
+      # ── Rename output ────────────────────────────────────────
+      - mv android/app/build/outputs/apk/release/app-release.apk
+          android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
+
+      # ── Print download path for logs ─────────────────────────
+      - echo "APK built at android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk"
+
+  publish-release:
+    image: codeberg.org/forgejo/release-action:latest
+    environment:
+      - CODEBERG_TOKEN
+    commands:
+      - forgejo-release --title "Dolby Unified Player Build $CI_BUILD_NUMBER"
+          --tag "v1.0.0-build$CI_BUILD_NUMBER"
+          --assets android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
+          --repo $CI_REPO
+          --token $CODEBERG_TOKEN
