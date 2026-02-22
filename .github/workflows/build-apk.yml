@@ -34,18 +34,83 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
-
-      - name: Accept licenses and install SDK packages
-        run: |
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
             --sdk_root=$HOME/android-sdk \
             "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Install Capacitor and dependencies
+      - name: Install dependencies
         run: npm install
+
+      - name: Remove existing Android platform if present
+        run: rm -rf android
 
       - name: Add Android platform
         run: npx cap add android
+
+      - name: Copy MainActivity and AndroidManifest
+        run: |
+          mkdir -p android/app/src/main/java/com/dolby/unifiedplayer
+
+          cat > android/app/src/main/java/com/dolby/unifiedplayer/MainActivity.java << 'EOF'
+          package com.dolby.unifiedplayer;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.view.View;
+          import com.getcapacitor.BridgeActivity;
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              super.onCreate(savedInstanceState);
+              WebView webView = getBridge().getWebView();
+              WebSettings ws = webView.getSettings();
+              ws.setMediaPlaybackRequiresUserGesture(false);
+              ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+              ws.setAllowFileAccess(true);
+              ws.setAllowContentAccess(true);
+              webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
+          }
+          EOF
+
+          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET"/>
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+            <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+            <application
+              android:allowBackup="true"
+              android:hardwareAccelerated="true"
+              android:icon="@mipmap/ic_launcher"
+              android:label="@string/app_name"
+              android:roundIcon="@mipmap/ic_launcher_round"
+              android:supportsRtl="true"
+              android:usesCleartextTraffic="true">
+              <activity
+                android:name=".MainActivity"
+                android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+                android:exported="true"
+                android:launchMode="singleTask"
+                android:windowSoftInputMode="adjustResize">
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN"/>
+                  <category android:name="android.intent.category.LAUNCHER"/>
+                </intent-filter>
+                <intent-filter android:autoVerify="true">
+                  <action android:name="android.intent.action.VIEW"/>
+                  <category android:name="android.intent.category.DEFAULT"/>
+                  <category android:name="android.intent.category.BROWSABLE"/>
+                  <data android:scheme="com.dolby.unifiedplayer" android:host="callback"/>
+                </intent-filter>
+              </activity>
+            </application>
+          </manifest>
+          EOF
 
       - name: Sync web assets into Android project
         run: npx cap sync android
@@ -59,6 +124,8 @@ jobs:
 
       - name: Build signed release APK
         working-directory: android
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/dolby-release.jks \
