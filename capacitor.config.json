@@ -1,0 +1,16 @@
+{
+  "appId": "com.dolby.unifiedplayer",
+  "appName": "Dolby Unified Player",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": false,
+    "minWebViewVersion": 90,
+    "backgroundColor": "#0a0a0f"
+  },
+  "plugins": {
+    "Browser": {
+      "presentationStyle": "popover"
+    }
+  }
+}
