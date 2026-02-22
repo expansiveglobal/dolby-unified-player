@@ -64,19 +64,19 @@ jobs:
           mv android/app/build/outputs/apk/release/app-release.apk \
              android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
 
-      - name: Upload APK als artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: DolbyUnifiedPlayer-APK
           path: android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
           retention-days: 30
 
-      - name: Maak Codeberg Release aan
+      - name: Create Codeberg Release
         uses: https://codeberg.org/actions/forgejo-release@v2
         with:
           direction: upload
           tag: v1.0.0-build${{ gitea.run_number }}
           title: "Dolby Unified Player Build ${{ gitea.run_number }}"
-          release-notes: "Automatische release — APK bijgevoegd als download."
+          release-notes: "Automated release — APK attached as download."
           token: ${{ secrets.FORGEJO_TOKEN }}
           files: android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
