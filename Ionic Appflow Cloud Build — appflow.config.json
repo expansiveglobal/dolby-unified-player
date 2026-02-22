@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════════
+#  .appflow.yml  — Ionic Appflow cloud build configuration
+#  Produces a signed release APK via Appflow's build servers
+#  without any local Android SDK required.
+# ═══════════════════════════════════════════════════════════
+
+# Trigger build on every push to main
+trigger:
+  push:
+    branches:
+      - main
+
+# Build environment
+environment:
+  node_version: "20"
+  java_version: "17"
+
+# Android build definition
+builds:
+  android:
+    type: android
+    build_type: release           # signed release APK
+    security_profile: DolbyRelease   # name of signing cert uploaded to Appflow dashboard
+
+    # Commands run before Capacitor sync
+    pre_build:
+      - npm ci
+
+    # Capacitor sync is run automatically by Appflow
+    # post_sync hook — nothing extra needed
+
+    # Path to the APK output Appflow will package and deliver
+    artifact_path: android/app/build/outputs/apk/release/app-release.apk
+
+    # Appflow environment variables (set in dashboard, not here)
+    # SPOTIFY_CLIENT_ID, TIDAL_CLIENT_ID, DEEZER_APP_ID, etc.
+    # These are injected at build time via sed replacements below:
+    post_build:
+      - |
+        mv android/app/build/outputs/apk/release/app-release.apk \
+           android/app/build/outputs/apk/release/DolbyUnifiedPlayer.apk
+
+# ─────────────────────────────────────────────
+# appflow.config.json (place at project root)
+# This file links your repo to the Appflow app
+# ─────────────────────────────────────────────
+# {
+#   "id": "YOUR_APPFLOW_APP_ID",
+#   "name": "Dolby Unified Player",
+#   "integrations": {
+#     "appflow": {}
+#   },
+#   "type": "capacitor"
+# }
