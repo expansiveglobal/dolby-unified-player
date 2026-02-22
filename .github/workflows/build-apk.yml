@@ -49,6 +49,13 @@ jobs:
           yes | sdkmanager --sdk_root=$HOME/android-sdk \
             "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
+      - name: List repository files
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in root:"
+          ls -la
+
       - name: Install npm dependencies
         run: npm install
 
